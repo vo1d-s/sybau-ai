@@ -63,7 +63,6 @@ When writing files, split large files into multiple tool calls.
 Never generate multiple files inside a single tool call.
 Each <tool> must contain ONLY ONE file write.
 You have the following tools. Use them depending on the use case:
-Run only one tool per response. Once you get the response, you can continue.
 ---
 {tools}
 """.replace(r"{tools}", formatted_tools)

@@ -1,0 +1,21 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "sybau"
+version = "0.1.0"
+description = "Sybau AI - free Claude Code-like terminal assistant"
+readme = "README.md"
+requires-python = ">=3.9"
+dependencies = [
+    "prompt_toolkit",
+    "httpx",
+    "aiohttp",
+]
+
+[project.scripts]
+sybau = "core.chat:run"
+
+[tool.setuptools]
+packages = ["core", "config", "extra", "tools"]

@@ -13,8 +13,6 @@ COMMANDS = [
     "/model"
 ]
 
-saved_memory = []
-
 class CommandCompleter(Completer):
     def get_completions(self, document, complete_event):
         text = document.current_line_before_cursor
@@ -94,5 +92,3 @@ def run():
     # print title
     ui.print_title()
     asyncio.run(main_loop())
-
-run()

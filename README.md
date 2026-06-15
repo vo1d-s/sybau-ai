@@ -1,1 +1,3 @@
-# Sybau
+# Sybau AI
+So this is free opus 4.8, gpt 5.5, etc...
+Yeah, claude code, free
