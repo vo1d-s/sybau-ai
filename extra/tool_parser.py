@@ -4,6 +4,34 @@ import re
 TOOL_OPEN = "<tool>"
 TOOL_CLOSE = "</tool>"
 
+SKILL_OPEN = "<read_skill>"
+SKILL_CLOSE = "</read_skill>"
+
+
+def extract_skills(text: str):
+    """Return a list of skill identifiers requested via <read_skill>name</read_skill>.
+
+    Supports multiple tags in one response. Whitespace around the name is
+    stripped. Empty names are ignored. Order is preserved and duplicates are
+    removed while keeping first-seen order.
+    """
+    names: list[str] = []
+    seen: set[str] = set()
+    for match in re.finditer(
+        re.escape(SKILL_OPEN) + r"(.*?)" + re.escape(SKILL_CLOSE),
+        text,
+        re.DOTALL,
+    ):
+        name = match.group(1).strip()
+        if not name:
+            continue
+        key = name.lower()
+        if key in seen:
+            continue
+        seen.add(key)
+        names.append(name)
+    return names
+
 
 def extract_tools(text: str):
     """Return successfully-parsed tool calls (back-compat shape)."""

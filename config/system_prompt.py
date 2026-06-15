@@ -1,4 +1,5 @@
 from tools.registry import TOOL_DESCRIPTIONS
+from extra.skills import skills_prompt_block
 
 
 def format_tools(tools: dict) -> str:
@@ -57,7 +58,7 @@ When in doubt, issue the tool call. A wasted read is cheap; a confident wrong an
 - Include enough unchanged context lines so the patch can be anchored reliably.
 - Use one file per `*** Update File` / `*** Add File` / `*** Delete File` block.
 
-TOOL FORMAT: `<tool>{"name": "[TOOLNAME]", "arg(example)": "value(example)"}`
+TOOL FORMAT: `<tool>{"name": "<TOOLNAME>", "arg(example)": "value(example)"}`
 IMPORTANT RULE:
 When writing files, split large files into multiple tool calls.
 Never generate multiple files inside a single tool call.
@@ -65,4 +66,7 @@ Each <tool> must contain ONLY ONE file write.
 You have the following tools. Use them depending on the use case:
 ---
 {tools}
+
+{skills}
 """.replace(r"{tools}", formatted_tools)
+AGENT_PROMPT = AGENT_PROMPT.replace(r"{skills}", skills_prompt_block())

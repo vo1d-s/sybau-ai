@@ -1,5 +1,5 @@
 from core import api
-from extra import ui, tool_parser
+from extra import ui, tool_parser, skills
 from tools import executor
 
 # actual generate handler
@@ -53,8 +53,13 @@ async def run_agent(user_message: str, model_id: str, system_prompt: str, memory
     )
 
     while True:
-        # extract tools in the response
+        # extract tools and skill requests in the response
         tools, tool_errors = tool_parser.extract_tools_with_errors(response)
+        skill_names = tool_parser.extract_skills(response)
+
+        # collect feedback blocks from both tools and skills so a single
+        # response can do both in one turn
+        feedback_blocks: list[str] = []
 
         if tools:
             # print all tool names
@@ -64,11 +69,37 @@ async def run_agent(user_message: str, model_id: str, system_prompt: str, memory
             # if multiple found, run all
             results = await executor.run_tools_parallel(tools)
 
-            tool_text = "\n".join(str(r) for r in results)
+            tool_text = "\n\n".join(f"{tools[i]}\n{str(r)}" for i,r in enumerate(results))
 
-            # send tool results back to model
+            ui.print_tool_results(tools, results)
+
+            feedback_blocks.append(f"Tool results:\n{tool_text}")
+
+        if skill_names:
+            # read each requested skill; support multiple in one turn
+            ui.print_tools("read_skill: " + ", ".join(skill_names))
+
+            skill_parts: list[str] = []
+            for name in skill_names:
+                content = skills.read_skill(name)
+                if content is None:
+                    skill_parts.append(
+                        f"<skill name=\"{name}\">\nError: skill not found.\n</skill>"
+                    )
+                else:
+                    skill_parts.append(
+                        f"<skill name=\"{name}\">\n{content}\n</skill>"
+                    )
+
+            skill_text = "\n\n".join(skill_parts)
+            print(skill_text)
+
+            feedback_blocks.append(f"Skill contents:\n{skill_text}")
+
+        if feedback_blocks:
+            # send tool results and/or skill contents back to model
             response, saved_memory = await _stream_agent(
-                f"Tool results:\n{tool_text}",
+                "\n\n".join(feedback_blocks),
                 model_id,
                 system_prompt,
                 saved_memory

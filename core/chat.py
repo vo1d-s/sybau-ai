@@ -1,6 +1,7 @@
 import asyncio
 from prompt_toolkit import PromptSession
 from prompt_toolkit.completion import Completer, Completion
+from prompt_toolkit.key_binding import KeyBindings, KeyPressEvent
 from extra.models import MODELS
 from extra import storage, ui
 from config.settings import DEFAULT_MODEL
@@ -10,7 +11,8 @@ from core import agent
 # All commands that can be ran
 COMMANDS = [
     "/models",
-    "/model"
+    "/model",
+    "/skills"
 ]
 
 class CommandCompleter(Completer):
@@ -26,12 +28,32 @@ class CommandCompleter(Completer):
 
 # Chat loop
 async def main_loop():
+    kb = KeyBindings()
+
+    # Enter -> send
+    @kb.add("enter")
+    def _enter(event: KeyPressEvent):
+
+        for kp in event.key_sequence:
+
+            if getattr(kp, "data", None) and "\n" in kp.data:
+                event.current_buffer.insert_text("\n")
+                return
+
+        event.current_buffer.validate_and_handle()
+
+    # Alt+Enter -> newline
+    @kb.add("escape", "enter")
+    def _alt_enter(event: KeyPressEvent):
+        event.current_buffer.insert_text("\n")
+    
     # Create the prompt session (input + autocompletion)
     session = PromptSession(
+        key_bindings=kb,
         multiline=True,
-        complete_while_typing=True,
         enable_open_in_editor=True,
         completer=CommandCompleter(),
+        refresh_interval=0.25,
     )
 
     # Load necessary files
@@ -71,6 +93,30 @@ async def main_loop():
             # set model_id and save after
             config_data["model_id"] = arg
             storage.save_config(config_data)
+
+        elif cmd == "skills":
+            from extra import skills as skills_mod
+
+            choice = ui.arrow_select(
+                "Skills",
+                [
+                    ("Check existing skills", "List skills in the current folder"),
+                    ("Select new skills folder", "Pick a different skills directory"),
+                ],
+            )
+
+            if choice == 0:
+                ui.print_skills(skills_mod.list_skills())
+            elif choice == 1:
+                folder = ui.pick_folder()
+                if folder:
+                    new_dir = skills_mod.set_skills_dir(folder)
+                    ui.console.print(
+                        f"[bright_green]Skills folder set to:[/bright_green] {new_dir}"
+                    )
+                    ui.print_skills(skills_mod.list_skills())
+                else:
+                    ui.console.print("[bright_black]Cancelled.[/bright_black]")
 
         # if no cmd, continue chatting
         if not cmd:
